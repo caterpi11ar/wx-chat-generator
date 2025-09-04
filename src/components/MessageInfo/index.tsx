@@ -1,9 +1,10 @@
 import { MESSAGE_TYPE } from '@/types'
+import Image from './Image'
 import Text from './Text'
 
 const Options = {
   [MESSAGE_TYPE.TEXT]: Text,
-  [MESSAGE_TYPE.IMAGE]: Text,
+  [MESSAGE_TYPE.IMAGE]: Image,
   [MESSAGE_TYPE.FILE]: Text,
   [MESSAGE_TYPE.LINK]: Text,
   [MESSAGE_TYPE.VIDEO]: Text,

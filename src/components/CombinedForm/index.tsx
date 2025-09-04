@@ -2,8 +2,8 @@ import type { FormProps, GetProp, UploadFile, UploadProps } from 'antd'
 import type { Dayjs } from 'dayjs'
 import type { FC } from 'react'
 import type { MessageDetail, UserInfo } from '@/types'
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Form, Input, message, Radio, Select, TimePicker, Upload } from 'antd'
+import { DownloadOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Form, Input, message, Radio, Select, Spin, TimePicker, Upload } from 'antd'
 import dayjs from 'dayjs'
 import html2canvas from 'html2canvas'
 import { useState } from 'react'
@@ -28,6 +28,7 @@ interface CombinedFormData {
   type: MESSAGE_TYPE
   sender: SENDER
   text?: string
+  url?: string
 }
 
 interface Props {
@@ -41,9 +42,118 @@ interface Props {
 type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0]
 
 function getBase64(img: Blob, callback: (url: string) => void) {
+  console.log('getBase64 input file:', {
+    name: (img as File).name || 'unknown',
+    type: img.type,
+    size: img.size,
+    lastModified: (img as File).lastModified || 'unknown',
+  })
+
   const reader = new FileReader()
-  reader.addEventListener('load', () => callback(reader.result as string))
-  reader.readAsDataURL(img)
+
+  reader.addEventListener('load', () => {
+    const result = reader.result
+    console.log('FileReader result type:', typeof result, 'constructor:', result?.constructor?.name)
+
+    if (typeof result === 'string') {
+      // 验证是否是有效的data URL
+      if (result.startsWith('data:') && result.includes(',')) {
+        console.log('Valid base64 generated, length:', result.length)
+        callback(result)
+      }
+      else {
+        console.error('Invalid data URL format:', result.substring(0, 100))
+        callback('')
+      }
+    }
+    else if (result instanceof ArrayBuffer) {
+      console.error('FileReader returned ArrayBuffer instead of string - this should not happen with readAsDataURL')
+      callback('')
+    }
+    else {
+      console.error('getBase64: reader.result is unexpected type:', typeof result, result)
+      callback('')
+    }
+  })
+
+  reader.addEventListener('error', (event) => {
+    console.error('getBase64: FileReader error:', event, reader.error)
+    callback('')
+  })
+
+  try {
+    reader.readAsDataURL(img)
+  }
+  catch (error) {
+    console.error('Error calling readAsDataURL:', error)
+    callback('')
+  }
+}
+
+// 验证图片是否能正常渲染
+function validateImageRendering(dataUrl: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    console.log('validateImageRendering called with:', {
+      type: typeof dataUrl,
+      isString: typeof dataUrl === 'string',
+      length: dataUrl?.length,
+      prefix: dataUrl?.substring(0, 50),
+    })
+
+    // 检查数据URL是否有效
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      console.error('Invalid dataUrl for validation:', {
+        dataUrl,
+        type: typeof dataUrl,
+        startsWithData: dataUrl?.startsWith?.('data:'),
+      })
+      resolve(false)
+      return
+    }
+
+    const img = new Image()
+    const timeoutId = setTimeout(() => {
+      console.error('Image validation timeout after 10 seconds')
+      resolve(false)
+    }, 10000) // 10秒超时
+
+    img.onload = () => {
+      clearTimeout(timeoutId)
+      console.log('Image loaded successfully:', {
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        src: `${img.src.substring(0, 50)}...`,
+      })
+      // 检查图片是否有有效的尺寸
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        resolve(true)
+      }
+      else {
+        console.error('Image has invalid dimensions:', {
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+        })
+        resolve(false)
+      }
+    }
+
+    img.onerror = (event) => {
+      clearTimeout(timeoutId)
+      console.error('Image failed to load:', event, {
+        src: `${img.src.substring(0, 50)}...`,
+      })
+      resolve(false)
+    }
+
+    try {
+      img.src = dataUrl
+    }
+    catch (error) {
+      clearTimeout(timeoutId)
+      console.error('Error setting image src:', error)
+      resolve(false)
+    }
+  })
 }
 
 const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChange, onMessageSubmit }) => {
@@ -52,27 +162,87 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
   const [senderFileList, setSenderFileList] = useState<UploadFile[]>([])
   const [bgFileList, setBgFileList] = useState<UploadFile[]>([])
 
+  // 图片验证状态
+  const [imageValidating, setImageValidating] = useState<{
+    recipient: boolean
+    sender: boolean
+    background: boolean
+    message: boolean
+  }>({
+    recipient: false,
+    sender: false,
+    background: false,
+    message: false,
+  })
+
   const [recipient, sender] = userList
 
-  const createUploadHandler = (type: 'recipient' | 'sender' | 'background') => (file: FileType) => {
-    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png'
-    if (!isJpgOrPng) {
-      message.error('请上传图片')
+  const createUploadHandler = (type: 'recipient' | 'sender' | 'background' | 'message') => (file: FileType) => {
+    const isImage = file.type.startsWith('image/')
+    if (!isImage) {
+      message.error('请上传图片文件（支持 JPG、PNG、GIF、WebP 等格式）')
       return false
     }
 
-    getBase64(file, (url) => {
-      if (type === 'recipient') {
-        setRecipientFileList([file])
-        onUsersChange([{ ...recipient, avatar: url }, sender])
+    // 检查文件大小，限制在 5MB 以内
+    const isLt5M = file.size / 1024 / 1024 < 5
+    if (!isLt5M) {
+      message.error('图片大小不能超过 5MB')
+      return false
+    }
+
+    // 设置验证状态为加载中
+    setImageValidating(prev => ({ ...prev, [type]: true }))
+
+    getBase64(file, async (url) => {
+      try {
+        // 检查 base64 数据是否有效
+        if (!url || typeof url !== 'string' || !url.startsWith('data:image/')) {
+          message.error('图片文件读取失败，请重试')
+          setImageValidating(prev => ({ ...prev, [type]: false }))
+          return
+        }
+
+        // 验证图片是否能正常渲染
+        const isValidImage = await validateImageRendering(url)
+
+        if (!isValidImage) {
+          message.error('图片文件已损坏或格式不支持，无法正常显示')
+          setImageValidating(prev => ({ ...prev, [type]: false }))
+          return
+        }
+
+        // 图片验证通过，设置到相应位置
+        if (type === 'recipient') {
+          setRecipientFileList([file])
+          onUsersChange([{ ...recipient, avatar: url }, sender])
+        }
+        else if (type === 'sender') {
+          setSenderFileList([file])
+          onUsersChange([recipient, { ...sender, avatar: url }])
+        }
+        else if (type === 'background') {
+          setBgFileList([file])
+          onMetaChange({ ...metaInfo, backgroundImg: url })
+        }
+        else if (type === 'message') {
+          console.log('Setting message image url:', url, 'typeof:', typeof url)
+          // 不设置原始文件对象到 fileList，避免干扰表单值
+          form.setFieldValue('url', url)
+
+          // 验证设置后的值
+          setTimeout(() => {
+            const fieldValue = form.getFieldValue('url')
+            console.log('Field value after setting:', fieldValue, 'typeof:', typeof fieldValue)
+          }, 0)
+        }
+
+        setImageValidating(prev => ({ ...prev, [type]: false }))
       }
-      else if (type === 'sender') {
-        setSenderFileList([file])
-        onUsersChange([recipient, { ...sender, avatar: url }])
-      }
-      else if (type === 'background') {
-        setBgFileList([file])
-        onMetaChange({ ...metaInfo, backgroundImg: url })
+      catch (error) {
+        console.error('图片验证失败:', error)
+        message.error('图片验证失败，请重试')
+        setImageValidating(prev => ({ ...prev, [type]: false }))
       }
     })
     return false
@@ -93,16 +263,25 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
   }
 
   const handleFinish = (values: CombinedFormData) => {
-    onMessageSubmit({
+    console.log('handleFinish values:', values)
+    console.log('values.url type:', typeof values.url, 'value:', values.url)
+
+    const messageData = {
       type: values.type,
       sender: values.sender,
       text: values.text,
-    })
+      url: values.url,
+    }
+
+    console.log('Submitting message:', messageData)
+    onMessageSubmit(messageData)
+
     // 重置消息表单部分
     form.setFieldsValue({
       type: MESSAGE_TYPE.TEXT,
       sender: SENDER.Sender,
       text: '',
+      url: '',
     })
   }
 
@@ -184,16 +363,23 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
                 beforeUpload={createUploadHandler('recipient')}
                 fileList={recipientFileList}
                 className="flex-shrink-0"
+                accept="image/*"
               >
-                {recipient?.avatar
+                {imageValidating.recipient
                   ? (
-                      <img src={recipient.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
-                    )
-                  : (
-                      <div className="w-12 h-12 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center hover:border-blue-400 transition-colors cursor-pointer">
-                        <PlusOutlined className="text-blue-500" />
+                      <div className="w-12 h-12 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center">
+                        <Spin indicator={<LoadingOutlined className="text-blue-500" />} size="small" />
                       </div>
-                    )}
+                    )
+                  : recipient?.avatar
+                    ? (
+                        <img src={recipient.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
+                      )
+                    : (
+                        <div className="w-12 h-12 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center hover:border-blue-400 transition-colors cursor-pointer">
+                          <PlusOutlined className="text-blue-500" />
+                        </div>
+                      )}
               </Upload>
               <div className="flex-1 min-w-0">
                 <div className="text-xs text-blue-600 font-medium mb-1">对方</div>
@@ -211,16 +397,23 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
                 beforeUpload={createUploadHandler('sender')}
                 fileList={senderFileList}
                 className="flex-shrink-0"
+                accept="image/*"
               >
-                {sender?.avatar
+                {imageValidating.sender
                   ? (
-                      <img src={sender.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
-                    )
-                  : (
-                      <div className="w-12 h-12 rounded-full bg-white border-2 border-green-300 flex items-center justify-center hover:border-green-400 transition-colors cursor-pointer">
-                        <PlusOutlined className="text-green-500" />
+                      <div className="w-12 h-12 rounded-full bg-white border-2 border-green-300 flex items-center justify-center">
+                        <Spin indicator={<LoadingOutlined className="text-green-500" />} size="small" />
                       </div>
-                    )}
+                    )
+                  : sender?.avatar
+                    ? (
+                        <img src={sender.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
+                      )
+                    : (
+                        <div className="w-12 h-12 rounded-full bg-white border-2 border-green-300 flex items-center justify-center hover:border-green-400 transition-colors cursor-pointer">
+                          <PlusOutlined className="text-green-500" />
+                        </div>
+                      )}
               </Upload>
               <div className="flex-1 min-w-0">
                 <div className="text-xs text-green-600 font-medium mb-1">我</div>
@@ -247,17 +440,25 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
                   beforeUpload={createUploadHandler('background')}
                   fileList={bgFileList}
                   className="w-full h-full [&_.ant-upload-select]:!w-full [&_.ant-upload-select]:!h-full [&_.ant-upload-select]:!min-h-0"
+                  accept="image/*"
                 >
-                  {metaInfo.backgroundImg
+                  {imageValidating.background
                     ? (
-                        <img src={metaInfo.backgroundImg} alt="background" className="w-full h-full object-cover rounded" />
-                      )
-                    : (
-                        <div className="flex flex-col items-center justify-center h-full text-purple-500 hover:text-purple-600 transition-colors">
-                          <PlusOutlined className="text-sm" />
-                          <span className="text-xs mt-1">上传</span>
+                        <div className="flex flex-col items-center justify-center h-full text-purple-500">
+                          <Spin indicator={<LoadingOutlined className="text-sm" />} size="small" />
+                          <span className="text-xs mt-1">验证中</span>
                         </div>
-                      )}
+                      )
+                    : metaInfo.backgroundImg
+                      ? (
+                          <img src={metaInfo.backgroundImg} alt="background" className="w-full h-full object-cover rounded" />
+                        )
+                      : (
+                          <div className="flex flex-col items-center justify-center h-full text-purple-500 hover:text-purple-600 transition-colors">
+                            <PlusOutlined className="text-sm" />
+                            <span className="text-xs mt-1">上传</span>
+                          </div>
+                        )}
                 </Upload>
               </div>
             </div>
@@ -285,23 +486,69 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
               </Form.Item>
             </div>
 
-            <Form.Item
-              name="text"
-              label="消息内容"
-              rules={[{ required: true, message: '请输入消息内容' }]}
-            >
-              <Input.TextArea
-                rows={4}
-                placeholder="输入消息内容..."
-                maxLength={200}
-                showCount
-                size="small"
-              />
+            <Form.Item noStyle shouldUpdate={(prevValues, curValues) => prevValues.type !== curValues.type}>
+              {({ getFieldValue }) =>
+                getFieldValue('type') === MESSAGE_TYPE.IMAGE
+                  ? (
+                      <Form.Item
+                        name="url"
+                        label="选择图片"
+                        rules={[{ required: true, message: '请选择图片' }]}
+                      >
+                        <Upload
+                          listType="picture-card"
+                          showUploadList={false}
+                          beforeUpload={createUploadHandler('message')}
+                          className="w-full"
+                          accept="image/*"
+                        >
+                          {imageValidating.message
+                            ? (
+                                <div className="flex flex-col items-center justify-center h-20 text-gray-500">
+                                  <Spin indicator={<LoadingOutlined className="text-lg mb-1" />} size="small" />
+                                  <span className="text-xs">验证图片中...</span>
+                                </div>
+                              )
+                            : getFieldValue('url')
+                              ? (
+                                  <img src={getFieldValue('url')} alt="message" className="w-full h-full object-cover rounded" />
+                                )
+                              : (
+                                  <div className="flex flex-col items-center justify-center h-20 text-gray-500">
+                                    <PlusOutlined className="text-lg mb-1" />
+                                    <span className="text-xs">选择图片</span>
+                                  </div>
+                                )}
+                        </Upload>
+                      </Form.Item>
+                    )
+                  : (
+                      <Form.Item
+                        name="text"
+                        label="消息内容"
+                        rules={[{ required: true, message: '请输入消息内容' }]}
+                      >
+                        <Input.TextArea
+                          rows={4}
+                          placeholder="输入消息内容..."
+                          maxLength={200}
+                          showCount
+                          size="small"
+                        />
+                      </Form.Item>
+                    )}
             </Form.Item>
 
             <Form.Item noStyle>
-              <Button type="primary" htmlType="submit" block className="h-9 text-sm">
-                发送消息
+              <Button
+                type="primary"
+                htmlType="submit"
+                block
+                className="h-9 text-sm"
+                loading={imageValidating.message}
+                disabled={imageValidating.message}
+              >
+                {imageValidating.message ? '验证图片中...' : '发送消息'}
               </Button>
             </Form.Item>
           </div>

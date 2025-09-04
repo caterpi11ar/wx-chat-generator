@@ -1,10 +1,33 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm install)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm dev:*)",
-      "Bash(pnpm add:*)"
+      "Read(/D:\\self-code\\chat-history-generator/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator/**)",
+      "Read(/D:\\self-code\\chat-history-generator/**)",
+      "Read(/D:\\self-code\\chat-history-generator/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\MessageInfo/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\MessageInfo/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\constants/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\MessageInfo/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)",
+      "Read(/D:\\self-code\\chat-history-generator\\src\\components\\CombinedForm/**)"
     ],
     "deny": [],
     "ask": []
