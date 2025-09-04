@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
+    "@vercel/speed-insights": "^1.2.0",
     "antd": "^5.27.2",
     "dayjs": "^1.11.18",
     "html2canvas": "^1.4.1",
