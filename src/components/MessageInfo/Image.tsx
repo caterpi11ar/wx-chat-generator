@@ -10,26 +10,17 @@ export default function Image(props: Props) {
   const { data, sender } = props
   const isSender = sender === SENDER.Sender
 
-  console.log('Image component data:', data)
-  console.log('Image component data.url:', data.url, 'typeof:', typeof data.url)
-
-  const baseClasses = 'relative max-w-80 mx-4 rounded-lg overflow-hidden'
-  const beforeClasses = 'before:content-empty before:block before:w-2.5 before:h-2.5 before:absolute before:top-4 before:transform before:rotate-45 before:rounded-tl'
-
-  const senderClasses = isSender
-    ? 'before:bg-[#95ec69] before:-right-1 before:-mt-1'
-    : 'before:bg-white before:-left-1 before:-mt-1'
-
+  const baseClasses = 'relative max-w-80 mx-4 rounded-lg flex items-center'
   return (
     <div className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
-      <div className={`${baseClasses} ${beforeClasses} ${senderClasses}`}>
+      <div className={`${baseClasses}`}>
         {data.url
           ? (
               <img
                 src={data.url}
                 alt="消息图片"
                 className="max-w-full h-auto rounded-lg shadow-sm"
-                style={{ maxHeight: '300px', minWidth: '120px' }}
+                style={{ maxHeight: '300px', maxWidth: '120px' }}
               />
             )
           : (
