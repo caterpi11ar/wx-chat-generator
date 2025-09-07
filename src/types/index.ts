@@ -22,5 +22,7 @@ export enum MESSAGE_TYPE {
   VIDEO = 3, // 视频
   FILE = 4, // 文件
   LINK = 5, // 链接
-  transaction = 6, // 交易
+  RED_ENVELOPE = 6, // 红包
+  TRANSFER = 7, // 转账
+  TIME = 8, // 对话时间
 }

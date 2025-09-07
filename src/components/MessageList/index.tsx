@@ -19,17 +19,6 @@ interface MessageListProps {
   metaInfo: MetaInfo
 }
 
-// 临时默认数据，稍后会用 Context 替换
-const defaultRecipientUser = {
-  username: '匿名',
-  avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNEREREREQiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxMiIgcj0iNiIgZmlsbD0iIzk5OTk5OSIvPgo8cGF0aCBkPSJNNCAxNkE5IDkgMCAwIDAgMjggMTZBOSA5IDAgMCAwIDQgMTZaIiBmaWxsPSIjOTk5OTk5Ii8+Cjwvc3ZnPgo=',
-}
-
-const defaultSenderUser = {
-  username: '我',
-  avatar: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM5NWVjNjkiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxMiIgcj0iNiIgZmlsbD0iI2ZmZmZmZiIvPgo8cGF0aCBkPSJNNCAxNkE5IDkgMCAwIDAgMjggMTZBOSA5IDAgMCAwIDQgMTZaIiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPgo=',
-}
-
 const MessageList: FC<MessageListProps> = (props) => {
   const { messageData, userList, metaInfo } = props
   const [recipient, sender] = userList
@@ -40,7 +29,7 @@ const MessageList: FC<MessageListProps> = (props) => {
     const Com = Options[item.type]
     const messageSender = item.sender
     const currentUser = messageSender === SENDER.Recipient ? recipient : sender
-    const imgSrc = currentUser?.avatar || (messageSender === SENDER.Recipient ? defaultRecipientUser?.avatar : defaultSenderUser?.avatar)
+    const imgSrc = currentUser?.avatar
 
     return (
       <div
@@ -68,10 +57,10 @@ const MessageList: FC<MessageListProps> = (props) => {
           <img src={back} style={{ height: '16px' }} />
         </div>
         <div
-          className="font-semibold mx-4 truncate"
+          className="font-400 mx-4 truncate"
           style={{ color: '#181818' }}
         >
-          {recipient?.username || defaultRecipientUser?.username || '匿名'}
+          {recipient?.username || '匿名'}
         </div>
         <div>
           <img src={right} style={{ width: '20px' }} />

@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { useState } from 'react'
 import CombinedForm from '@/components/CombinedForm'
 import MessageList from '@/components/MessageList'
+import { DEFAULT_MESSAGES, DEFAULT_META_INFO, DEFAULT_USERS } from '@/constants/defaultData'
 
 interface MetaInfo {
   time?: Dayjs | null
@@ -11,9 +12,9 @@ interface MetaInfo {
 }
 
 export default function HomePage() {
-  const [messageList, setMessageList] = useState<MessageDetail[]>([])
-  const [userList, setUserList] = useState<[UserInfo, UserInfo]>([{}, {}])
-  const [metaInfo, setMetaInfo] = useState<MetaInfo>({ time: dayjs() })
+  const [messageList, setMessageList] = useState<MessageDetail[]>(DEFAULT_MESSAGES)
+  const [userList, setUserList] = useState<[UserInfo, UserInfo]>(DEFAULT_USERS)
+  const [metaInfo, setMetaInfo] = useState<MetaInfo>({ time: dayjs(DEFAULT_META_INFO.time, 'HH:mm') })
 
   const handleMessageSubmit = (messageData: Omit<MessageDetail, 'id'>) => {
     setMessageList([...messageList, { ...messageData, id: Date.now() }])

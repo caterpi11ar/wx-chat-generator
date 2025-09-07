@@ -14,5 +14,7 @@ export const MESSAGE_TYPE_FILTER = [
   { label: '视频', value: MESSAGE_TYPE.VIDEO, disabled: true },
   { label: '文件', value: MESSAGE_TYPE.FILE, disabled: true },
   { label: '链接', value: MESSAGE_TYPE.LINK, disabled: true },
-  { label: '交易', value: MESSAGE_TYPE.transaction, disabled: true },
+  { label: '转账', value: MESSAGE_TYPE.TRANSFER, disabled: true },
+  { label: '红包', value: MESSAGE_TYPE.RED_ENVELOPE, disabled: true },
+  { label: '时间', value: MESSAGE_TYPE.TIME, disabled: true },
 ]

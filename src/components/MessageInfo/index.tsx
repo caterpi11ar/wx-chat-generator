@@ -8,7 +8,9 @@ const Options = {
   [MESSAGE_TYPE.FILE]: Text,
   [MESSAGE_TYPE.LINK]: Text,
   [MESSAGE_TYPE.VIDEO]: Text,
-  [MESSAGE_TYPE.transaction]: Text,
+  [MESSAGE_TYPE.TRANSFER]: Text,
+  [MESSAGE_TYPE.RED_ENVELOPE]: Text,
+  [MESSAGE_TYPE.TIME]: Text,
 }
 
 export default Options
