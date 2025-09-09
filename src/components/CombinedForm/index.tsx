@@ -3,7 +3,7 @@ import type { Dayjs } from 'dayjs'
 import type { FC } from 'react'
 import type { MessageDetail, UserInfo } from '@/types'
 import { DownloadOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button, Form, Input, message, Radio, Select, Spin, TimePicker, Upload } from 'antd'
+import { Button, Form, Input, InputNumber, message, Radio, Select, Spin, TimePicker, Upload } from 'antd'
 import dayjs from 'dayjs'
 import html2canvas from 'html2canvas'
 import { useState } from 'react'
@@ -29,6 +29,7 @@ interface CombinedFormData {
   sender: SENDER
   text?: string
   url?: string
+  duration?: number
 }
 
 interface Props {
@@ -271,6 +272,7 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
       sender: values.sender,
       text: values.text,
       url: values.url,
+      duration: values.duration,
     }
 
     console.log('Submitting message:', messageData)
@@ -282,6 +284,7 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
       sender: SENDER.Sender,
       text: '',
       url: '',
+      duration: undefined,
     })
   }
 
@@ -487,56 +490,79 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
             </div>
 
             <Form.Item noStyle shouldUpdate={(prevValues, curValues) => prevValues.type !== curValues.type}>
-              {({ getFieldValue }) =>
-                getFieldValue('type') === MESSAGE_TYPE.IMAGE
-                  ? (
-                      <Form.Item
-                        name="url"
-                        label="选择图片"
-                        rules={[{ required: true, message: '请选择图片' }]}
+              {({ getFieldValue }) => {
+                const messageType = getFieldValue('type')
+                
+                if (messageType === MESSAGE_TYPE.IMAGE) {
+                  return (
+                    <Form.Item
+                      name="url"
+                      label="选择图片"
+                      rules={[{ required: true, message: '请选择图片' }]}
+                    >
+                      <Upload
+                        listType="picture-card"
+                        showUploadList={false}
+                        beforeUpload={createUploadHandler('message')}
+                        className="w-full"
+                        accept="image/*"
                       >
-                        <Upload
-                          listType="picture-card"
-                          showUploadList={false}
-                          beforeUpload={createUploadHandler('message')}
-                          className="w-full"
-                          accept="image/*"
-                        >
-                          {imageValidating.message
+                        {imageValidating.message
+                          ? (
+                              <div className="flex flex-col items-center justify-center h-20 text-gray-500">
+                                <Spin indicator={<LoadingOutlined className="text-lg mb-1" />} size="small" />
+                                <span className="text-xs">验证图片中...</span>
+                              </div>
+                            )
+                          : getFieldValue('url')
                             ? (
-                                <div className="flex flex-col items-center justify-center h-20 text-gray-500">
-                                  <Spin indicator={<LoadingOutlined className="text-lg mb-1" />} size="small" />
-                                  <span className="text-xs">验证图片中...</span>
-                                </div>
+                                <img src={getFieldValue('url')} alt="message" className="w-full h-full object-cover rounded" />
                               )
-                            : getFieldValue('url')
-                              ? (
-                                  <img src={getFieldValue('url')} alt="message" className="w-full h-full object-cover rounded" />
-                                )
-                              : (
-                                  <div className="flex flex-col items-center justify-center h-20 text-gray-500">
-                                    <PlusOutlined className="text-lg mb-1" />
-                                    <span className="text-xs">选择图片</span>
-                                  </div>
-                                )}
-                        </Upload>
-                      </Form.Item>
-                    )
-                  : (
-                      <Form.Item
-                        name="text"
-                        label="消息内容"
-                        rules={[{ required: true, message: '请输入消息内容' }]}
-                      >
-                        <Input.TextArea
-                          rows={4}
-                          placeholder="输入消息内容..."
-                          maxLength={200}
-                          showCount
-                          size="small"
-                        />
-                      </Form.Item>
-                    )}
+                            : (
+                                <div className="flex flex-col items-center justify-center h-20 text-gray-500">
+                                  <PlusOutlined className="text-lg mb-1" />
+                                  <span className="text-xs">选择图片</span>
+                                </div>
+                              )}
+                      </Upload>
+                    </Form.Item>
+                  )
+                } else if (messageType === MESSAGE_TYPE.VOICE) {
+                  return (
+                    <Form.Item
+                      name="duration"
+                      label="语音时长（秒）"
+                      rules={[{ required: true, message: '请输入语音时长' }]}
+                    >
+                      <InputNumber
+                        placeholder="请输入语音时长"
+                        size="small"
+                        min={1}
+                        max={60}
+                        suffix="秒"
+                        style={{ width: '100%' }}
+                        precision={0}
+                      />
+                    </Form.Item>
+                  )
+                } else {
+                  return (
+                    <Form.Item
+                      name="text"
+                      label="消息内容"
+                      rules={[{ required: true, message: '请输入消息内容' }]}
+                    >
+                      <Input.TextArea
+                        rows={4}
+                        placeholder="输入消息内容..."
+                        maxLength={200}
+                        showCount
+                        size="small"
+                      />
+                    </Form.Item>
+                  )
+                }
+              }}
             </Form.Item>
 
             <Form.Item noStyle>

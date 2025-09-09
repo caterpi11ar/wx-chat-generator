@@ -1,6 +1,7 @@
 import { MESSAGE_TYPE } from '@/types'
 import Image from './Image'
 import Text from './Text'
+import Voice from './Voice'
 
 const Options = {
   [MESSAGE_TYPE.TEXT]: Text,
@@ -11,6 +12,7 @@ const Options = {
   [MESSAGE_TYPE.TRANSFER]: Text,
   [MESSAGE_TYPE.RED_ENVELOPE]: Text,
   [MESSAGE_TYPE.TIME]: Text,
+  [MESSAGE_TYPE.VOICE]: Voice,
 }
 
 export default Options
