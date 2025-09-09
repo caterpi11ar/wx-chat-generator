@@ -492,7 +492,7 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
             <Form.Item noStyle shouldUpdate={(prevValues, curValues) => prevValues.type !== curValues.type}>
               {({ getFieldValue }) => {
                 const messageType = getFieldValue('type')
-                
+
                 if (messageType === MESSAGE_TYPE.IMAGE) {
                   return (
                     <Form.Item
@@ -527,7 +527,8 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
                       </Upload>
                     </Form.Item>
                   )
-                } else if (messageType === MESSAGE_TYPE.VOICE) {
+                }
+                else if (messageType === MESSAGE_TYPE.VOICE) {
                   return (
                     <Form.Item
                       name="duration"
@@ -535,17 +536,20 @@ const CombinedForm: FC<Props> = ({ userList, metaInfo, onUsersChange, onMetaChan
                       rules={[{ required: true, message: '请输入语音时长' }]}
                     >
                       <InputNumber
-                        placeholder="请输入语音时长"
+                        placeholder="1-60"
                         size="small"
                         min={1}
                         max={60}
-                        suffix="秒"
+                        suffix="s"
                         style={{ width: '100%' }}
                         precision={0}
+                        keyboard
+                        controls
                       />
                     </Form.Item>
                   )
-                } else {
+                }
+                else {
                   return (
                     <Form.Item
                       name="text"
